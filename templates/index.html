@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Quality Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC3GAspOWXx5A703i4KwHqmPJWoql20hc0&libraries=places"></script>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --primary-hover: #45a049;
+            --secondary-color: #2196F3;
+            --text-color: #333;
+            --background-color: #f9f9f9;
+            --card-color: #ffffff;
+            --border-color: #ddd;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Poppins', Arial, sans-serif;
+            line-height: 1.6;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            background-image: url('https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            position: relative;
+        }
+        
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.85);
+            z-index: -1;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+        
+        h2 {
+            color: var(--secondary-color);
+            margin: 20px 0 15px;
+            font-size: 1.8rem;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 10px;
+        }
+        
+        .card {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        th {
+            background-color: var(--secondary-color);
+            color: white;
+            font-weight: 500;
+        }
+        
+        tr:nth-child(even) {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        
+        tr:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        button {
+            padding: 12px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background-color 0.3s, transform 0.2s;
+            margin: 10px 0;
+        }
+        
+        button:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        input[type="file"] {
+            display: block;
+            padding: 10px;
+            margin: 10px 0;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: white;
+        }
+        
+        #map {
+            width: 100%;
+            height: 500px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        #legend {
+            padding: 15px;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+        
+        .color-box {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            vertical-align: middle;
+            border-radius: 3px;
+        }
+        
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .legend-item {
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            border-radius: 4px;
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        
+        .info-window {
+            padding: 15px;
+            max-width: 250px;
+        }
+        
+        .info-window h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+        
+        .info-window p {
+            margin: 5px 0;
+        }
+        
+        .responsive-table-container {
+            overflow-x: auto;
+        }
+        
+        .file-upload {
+            margin: 15px 0;
+        }
+        
+        .helper-text {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .back-to-dashboard {
+            display: inline-block;
+            margin: 20px 0;
+            padding: 10px 15px;
+            background-color: var(--secondary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        
+        .back-to-dashboard:hover {
+            background-color: #0b7dda;
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+            .container {
+                padding: 10px;
+            }
+            .card {
+                padding: 15px;
+            }
+            th, td {
+                padding: 8px 10px;
+            }
+            #map {
+                height: 400px;
+            }
+            button {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            h2 {
+                font-size: 1.3rem;
+            }
+            .legend-grid {
+                grid-template-columns: 1fr;
+            }
+            #map {
+                height: 300px;
+            }
+        }
+    </style>
+    <script>
+        function uploadFile() {
+            const fileInput = document.getElementById("fileInput");
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert("Please select a file first!");
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append("file", file);
+            
+            fetch("/process_locations", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    displayLocations(data.data);
+                } else if (data.error) {
+                    alert("Error: " + data.error);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("An error occurred while uploading the file.");
+            });
+        }
+        
+        function displayLocations(locations) {
+            let tableBody = document.getElementById("locationsTableBody");
+            tableBody.innerHTML = "";
+            locations.forEach(location => {
+                let row = `<tr>
+                            <td>${location.name}</td>
+                            <td>${location.latitude}</td>
+                            <td>${location.longitude}</td>
+                        </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+        
+        function getAQI() {
+            document.getElementById("fetchButton").disabled = true;
+            document.getElementById("fetchButton").textContent = "Fetching...";
+            
+            fetch("/fetch_aqi_data", { method: "POST" })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                // Reload the map with updated data
+                initMap();
+                // Get the updated AQI data for the table
+                return fetch("/get_stored_aqi");
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayAQI(data);
+                document.getElementById("fetchButton").disabled = false;
+                document.getElementById("fetchButton").textContent = "Fetch AQI";
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("An error occurred while fetching AQI data.");
+                document.getElementById("fetchButton").disabled = false;
+                document.getElementById("fetchButton").textContent = "Fetch AQI";
+            });
+        }
+        
+        function displayAQI(data) {
+            let tableBody = document.getElementById("aqiTableBody");
+            tableBody.innerHTML = "";
+            data.forEach(item => {
+                let row = `<tr>
+                            <td>${item.location_name}</td>
+                            <td>${item.latitude}</td>
+                            <td>${item.longitude}</td>
+                            <td>${item.aqi !== null ? item.aqi : "Not Available"}</td>
+                            <td>${item.category || "Unknown"}</td>
+                            <td>${item.dominant_pollutant || "Unknown"}</td>
+                        </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+        
+        function getAQIColor(aqi) {
+            if (aqi === null) return "#808080"; // Gray for no data
+            if (aqi <= 50) return "#00E400"; // Green - Good
+            if (aqi <= 100) return "#FFFF00"; // Yellow - Moderate
+            if (aqi <= 150) return "#FF7E00"; // Orange - Unhealthy for Sensitive Groups
+            if (aqi <= 200) return "#FF0000"; // Red - Unhealthy
+            if (aqi <= 300) return "#8F3F97"; // Purple - Very Unhealthy
+            return "#7E0023"; // Maroon - Hazardous
+        }
+        
+        function getAQICategory(aqi) {
+            if (aqi === null) return "No Data";
+            if (aqi <= 50) return "Good";
+            if (aqi <= 100) return "Moderate";
+            if (aqi <= 150) return "Unhealthy for Sensitive Groups";
+            if (aqi <= 200) return "Unhealthy";
+            if (aqi <= 300) return "Very Unhealthy";
+            return "Hazardous";
+        }
+        
+        function initMap() {
+            var map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 5,
+                center: { lat: 20.5937, lng: 78.9629 },
+                mapTypeControl: true,
+                fullscreenControl: true,
+                streetViewControl: false
+            });
+            
+            fetch("/get_stored_aqi")
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(loc => {
+                    var markerColor = loc.color || getAQIColor(loc.aqi);
+                    
+                    var marker = new google.maps.Marker({
+                        position: { lat: loc.latitude, lng: loc.longitude },
+                        map: map,
+                        title: loc.location_name,
+                        label: {
+                            text: loc.aqi ? loc.aqi.toString() : "?",
+                            color: "white",
+                            fontWeight: "bold"
+                        },
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 10,
+                            fillColor: markerColor,
+                            fillOpacity: 1,
+                            strokeWeight: 1,
+                            strokeColor: "#ffffff"
+                        }
+                    });
+                    
+                    // Info Window with additional details
+                    var infoContent = `
+                        <div class="info-window">
+                            <h3>${loc.location_name}</h3>
+                            <p><strong>AQI:</strong> ${loc.aqi || "N/A"}</p>
+                            <p><strong>Category:</strong> ${loc.category || getAQICategory(loc.aqi)}</p>
+                            <p><strong>Dominant Pollutant:</strong> ${loc.dominant_pollutant || "Unknown"}</p>
+                        </div>
+                    `;
+                    
+                    var infoWindow = new google.maps.InfoWindow({
+                        content: infoContent
+                    });
+                    
+                    marker.addListener("click", function() {
+                        infoWindow.open(map, marker);
+                    });
+                });
+                
+                // Also update the table
+                displayAQI(data);
+            })
+            .catch(error => {
+                console.error("Error loading map data:", error);
+                alert("Failed to load map data. Please try again.");
+            });
+        }
+        
+        function loadInitialData() {
+            // Initialize the map
+            initMap();
+            
+            // Load stored locations
+            fetch("/get_stored_locations")
+            .then(response => response.json())
+            .then(data => {
+                displayLocations(data);
+            })
+            .catch(error => {
+                console.error("Error loading locations:", error);
+            });
+            
+            // Load AQI data for the table
+            fetch("/get_stored_aqi")
+            .then(response => response.json())
+            .then(data => {
+                displayAQI(data);
+            })
+            .catch(error => {
+                console.error("Error loading AQI data:", error);
+            });
+        }
+    </script>
+</head>
+<body onload="loadInitialData()">
+    <div class="container">
+        <header>
+            <h1>Air Quality Tracker</h1>
+            <p>Monitor air quality information across different locations</p>
+            <a href="/dashboard" class="back-to-dashboard">Back to Dashboard</a>
+        </header>
+        
+        <div class="card">
+            <h2>Upload Locations File</h2>
+            <div class="file-upload">
+                <input type="file" id="fileInput">
+                <button onclick="uploadFile()">Upload</button>
+                <p class="helper-text">Upload a text file with one location name per line</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Extracted Locations</h2>
+            <div class="responsive-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Location Name</th>
+                            <th>Latitude</th>
+                            <th>Longitude</th>
+                        </tr>
+                    </thead>
+                    <tbody id="locationsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Air Quality Data</h2>
+            <button id="fetchButton" onclick="getAQI()">Fetch AQI</button>
+            <p class="helper-text">Click to fetch the latest air quality data for all stored locations</p>
+            
+            <div class="responsive-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Location Name</th>
+                            <th>Latitude</th>
+                            <th>Longitude</th>
+                            <th>AQI</th>
+                            <th>Category</th>
+                            <th>Dominant Pollutant</th>
+                        </tr>
+                    </thead>
+                    <tbody id="aqiTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Air Quality Map</h2>
+            <div id="map"></div>
+            
+            <div id="legend">
+                <h3>AQI Legend</h3>
+                <div class="legend-grid">
+                    <div class="legend-item"><span class="color-box" style="background-color: #00E400;"></span> Good (0-50)</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #FFFF00;"></span> Moderate (51-100)</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #FF7E00;"></span> Unhealthy for Sensitive (101-150)</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #FF0000;"></span> Unhealthy (151-200)</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #8F3F97;"></span> Very Unhealthy (201-300)</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #7E0023;"></span> Hazardous (301+)</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #808080;"></span> No Data</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
