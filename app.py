@@ -1,16 +1,20 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 import sqlite3
+from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash
+
 import requests
 import os
 import json
-import re
 import re
 import hashlib
 import secrets
 import time
 from functools import wraps
+
 app = Flask(__name__)
 
+app.secret_key = "ShinchanYo"
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -37,6 +41,9 @@ def init_db():
             response TEXT
         )
     ''')
+    conn.commit()
+    conn.close()
+
 
     conn = sqlite3.connect(USER_DB)
     cursor = conn.cursor()
@@ -66,23 +73,11 @@ def login_required(f):
 
 # User registration and authentication
 def hash_password(password):
-    """Hash a password for storing."""
-    salt = hashlib.sha256(os.urandom(60)).hexdigest().encode('ascii')
-    pwdhash = hashlib.pbkdf2_hmac('sha512', password.encode('utf-8'), 
-                                salt, 100000)
-    pwdhash = pwdhash.hex()
-    return (salt + pwdhash).decode('ascii')
+    return generate_password_hash(password)
 
-def verify_password(stored_password, provided_password):
-    """Verify a stored password against one provided by user"""
-    salt = stored_password[:64]
-    stored_password = stored_password[64:]
-    pwdhash = hashlib.pbkdf2_hmac('sha512', 
-                                  provided_password.encode('utf-8'), 
-                                  salt.encode('ascii'), 
-                                  100000)
-    pwdhash = pwdhash.hex()
-    return pwdhash == stored_password
+
+def verify_password(stored_password_hash, password):
+    return check_password_hash(stored_password_hash, password)
 
 def is_valid_password(password):
     """Check if password meets complexity requirements"""
@@ -113,6 +108,16 @@ def store_location(name, latitude, longitude):
     conn.commit()
     conn.close()
 
+@app.route('/')
+def home():
+    if "user_id" in session:  
+        return redirect(url_for('dashboard'))  # User is logged in, go to dashboard
+    return redirect(url_for('login'))  # User is NOT logged in, go to login page
+
+@app.route('/index')
+def index():
+    return render_template("index.html")
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -120,7 +125,7 @@ def login():
         email = request.form.get("email")
         password = request.form.get("password")
         
-        conn = sqlite3.connect(LOC_DB)
+        conn = sqlite3.connect(USER_DB)
         cursor = conn.cursor()
         cursor.execute("SELECT id, password_hash, name FROM users WHERE email = ?", (email,))
         user = cursor.fetchone()
@@ -132,7 +137,7 @@ def login():
             session["user_email"] = email
             
             # Update last login time
-            conn = sqlite3.connect(LOC_DB)
+            conn = sqlite3.connect(USER_DB)
             cursor = conn.cursor()
             cursor.execute("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?", (user[0],))
             conn.commit()
@@ -151,10 +156,11 @@ def register():
         email = request.form.get("email")
         password = request.form.get("password")
         confirm_password = request.form.get("confirm_password")
-        name = request.form.get("name")
+        username = request.form.get("username")
+
         
         # Validate input
-        if not all([email, password, confirm_password, name]):
+        if not all([email, password, confirm_password, username]):
             flash("All fields are required", "error")
             return render_template("register.html")
         
@@ -171,7 +177,7 @@ def register():
             return render_template("register.html")
         
         # Check if email already exists
-        conn = sqlite3.connect(LOC_DB)
+        conn = sqlite3.connect(USER_DB)
         cursor = conn.cursor()
         cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
         existing_user = cursor.fetchone()
@@ -184,7 +190,7 @@ def register():
         # Create new user
         password_hash = hash_password(password)
         cursor.execute("INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)", 
-                      (email, password_hash, name))
+                      (email, password_hash, username))
         conn.commit()
         conn.close()
         
@@ -204,12 +210,13 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("dashboard.html", user_name=session.get("user_name"))
+    return render_template("dashboard.html", user_name=session.get("user_name"), current_user=session)
+
 
 @app.route("/profile")
 @login_required
 def profile():
-    conn = sqlite3.connect(LOC_DB)
+    conn = sqlite3.connect(USER_DB)
     cursor = conn.cursor()
     cursor.execute("SELECT email, name, created_at, last_login FROM users WHERE id = ?", (session["user_id"],))
     user = cursor.fetchone()
@@ -226,7 +233,7 @@ def profile():
         "last_login": user[3]
     }
     
-    return render_template("profile.html", user=user_data)
+    return render_template("profile.html", user_name=session.get("user_name"), current_user=session)
 
 @app.route("/reset_password", methods=["GET", "POST"])
 @login_required
@@ -250,7 +257,7 @@ def reset_password():
             return render_template("reset_password.html")
         
         # Verify current password
-        conn = sqlite3.connect(LOC_DB)
+        conn = sqlite3.connect(USER_DB)
         cursor = conn.cursor()
         cursor.execute("SELECT password_hash FROM users WHERE id = ?", (session["user_id"],))
         stored_password_hash = cursor.fetchone()[0]
@@ -270,8 +277,17 @@ def reset_password():
         flash("Password updated successfully", "success")
         return redirect(url_for("profile"))
     
-    return render_template("reset_password.html")
-
+    return render_template("reset_password.html",user_name=session.get("user_name"), current_user=session)
+# AQI Web Application
+# Fetch latitude & longitude from Google Maps API
+def get_lat_long(location_name):
+    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={location_name}&key={GOOGLE_MAPS_API_KEY}"
+    response = requests.get(url).json()
+    if response["status"] == "OK":
+        lat = response["results"][0]["geometry"]["location"]["lat"]
+        lng = response["results"][0]["geometry"]["location"]["lng"]
+        return lat, lng
+    return None, None
 
 @app.route("/process_locations", methods=["POST"])
 def process_locations():
@@ -297,15 +313,7 @@ def process_locations():
         return jsonify({"error": str(e)}), 500
     
 
-# Fetch latitude & longitude from Google Maps API
-def get_lat_long(location_name):
-    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={location_name}&key={GOOGLE_MAPS_API_KEY}"
-    response = requests.get(url).json()
-    if response["status"] == "OK":
-        lat = response["results"][0]["geometry"]["location"]["lat"]
-        lng = response["results"][0]["geometry"]["location"]["lng"]
-        return lat, lng
-    return None, None
+
 
 # Fetch all stored locations from the database
 def get_stored_locations():
@@ -376,9 +384,6 @@ def fetch_and_store_aqi():
     return jsonify({"success": True, "message": "AQI data stored successfully!"})
 
 
-@app.route("/")
-def index():
-    return render_template("index.html")
 
 
 @app.route("/get_stored_locations", methods=["GET"])
@@ -466,6 +471,96 @@ def fetch_stored_aqi():
         })
 
     return jsonify(results)
+
+#for extrawebpages
+
+@app.route("/analytics")
+@login_required
+def analytics():
+    # Get air quality data for analytics
+    conn = sqlite3.connect(LOC_DB)
+    cursor = conn.cursor()
+    cursor.execute("SELECT name, latitude, longitude, response FROM air_quality_index")
+    data = cursor.fetchall()
+    conn.close()
+    
+    analytics_data = []
+    for location_name, lat, lng, raw_response in data:
+        try:
+            response_json = json.loads(raw_response)
+            # Extract relevant analytics data
+            if "indexes" in response_json and len(response_json["indexes"]) > 0:
+                aqi_value = response_json["indexes"][0].get("aqi")
+                category = response_json["indexes"][0].get("category", "Unknown")
+                analytics_data.append({
+                    "location": location_name,
+                    "aqi": aqi_value,
+                    "category": category
+                })
+        except:
+            continue
+    
+    return render_template("analytics.html", analytics_data=analytics_data,user_name=session.get("user_name"), current_user=session)
+
+
+@app.route("/settings")
+@login_required
+def settings():
+    conn = sqlite3.connect(USER_DB)
+    cursor = conn.cursor()
+    cursor.execute("SELECT email, name FROM users WHERE id = ?", (session["user_id"],))
+    user = cursor.fetchone()
+    conn.close()
+    
+    if not user:
+        flash("User not found", "error")
+        return redirect(url_for("dashboard"))
+    
+    user_data = {
+        "email": user[0],
+        "name": user[1]
+    }
+    
+    return render_template("setting.html", user_name=session.get("user_name"), current_user=session)
+
+@app.route("/update_settings", methods=["POST"])
+@login_required
+def update_settings():
+    new_name = request.form.get("name")
+    email = request.form.get("email")
+    
+    if not new_name or not email:
+        flash("Name and email are required", "error")
+        return redirect(url_for("settings"))
+    
+    if not is_valid_email(email):
+        flash("Invalid email format", "error")
+        return redirect(url_for("settings"))
+    
+    # Check if email already exists (for other users)
+    conn = sqlite3.connect(USER_DB)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM users WHERE email = ? AND id != ?", (email, session["user_id"]))
+    existing_user = cursor.fetchone()
+    
+    if existing_user:
+        conn.close()
+        flash("Email already in use by another account", "error")
+        return redirect(url_for("settings"))
+    
+    # Update user info
+    cursor.execute("UPDATE users SET name = ?, email = ? WHERE id = ?", 
+                  (new_name, email, session["user_id"]))
+    conn.commit()
+    conn.close()
+    
+    # Update session
+    session["user_name"] = new_name
+    session["user_email"] = email
+    
+    flash("Settings updated successfully", "success")
+    return redirect(url_for("settings"))
+
 
 if __name__ == "__main__":
     init_db()

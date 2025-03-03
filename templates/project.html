@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block title %}Project Details{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8">
+            <h1>{{ project.title }}</h1>
+            <p class="text-muted">
+                Posted by <a href="{{ url_for('profile', username=project.creator.username) }}">{{ project.creator.username }}</a> 
+                on {{ project.created_at.strftime('%B %d, %Y') }}
+            </p>
+            
+            <div class="mb-4">
+                <span class="badge bg-primary">{{ project.category }}</span>
+                <span class="badge bg-info">Status: {{ project.status }}</span>
+                {% if project.is_recruiting %}
+                    <span class="badge bg-success">Recruiting</span>
+                {% endif %}
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Project Description</h5>
+                    <p class="card-text">{{ project.description }}</p>
+                </div>
+            </div>
+            
+            {% if project.skills_required %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Skills Required</h5>
+                    <div>
+                        {% for skill in project.skills_required.split(',') %}
+                            <span class="badge bg-secondary me-1">{{ skill.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Team Members</h5>
+                    <ul class="list-group list-group-flush">
+                        {% for member in team_members %}
+                            <li class="list-group-item">
+                                <a href="{{ url_for('profile', username=member.username) }}">{{ member.username }}</a>
+                                {% if member.id == project.creator_id %}
+                                    <span class="badge bg-dark">Creator</span>
+                                {% endif %}
+                                <span class="text-muted">{{ member.role }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            
+            {% if current_user.is_authenticated %}
+                {% if current_user.id == project.creator_id %}
+                    <div class="mb-3">
+                        <a href="{{ url_for('edit_project', project_id=project.id) }}" class="btn btn-warning">Edit Project</a>
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteProjectModal">
+                            Delete Project
+                        </button>
+                    </div>
+                    
+                    <!-- Applications Section (visible only to creator) -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5>Applications ({{ applications|length }})</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if applications %}
+                                <div class="list-group">
+                                    {% for application in applications %}
+                                        <div class="list-group-item">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h5 class="mb-1">
+                                                    <a href="{{ url_for('profile', username=application.applicant.username) }}">
+                                                        {{ application.applicant.username }}
+                                                    </a>
+                                                </h5>
+                                                <small class="text-muted">{{ application.created_at.strftime('%B %d, %Y') }}</small>
+                                            </div>
+                                            <p class="mb-1">{{ application.message }}</p>
+                                            <div class="mt-2">
+                                                {% if application.status == 'pending' %}
+                                                    <form method="post" action="{{ url_for('handle_application', project_id=project.id, application_id=application.id) }}" class="d-inline">
+                                                        <input type="hidden" name="action" value="accept">
+                                                        <button type="submit" class="btn btn-sm btn-success">Accept</button>
+                                                    </form>
+                                                    <form method="post" action="{{ url_for('handle_application', project_id=project.id, application_id=application.id) }}" class="d-inline">
+                                                        <input type="hidden" name="action" value="reject">
+                                                        <button type="submit" class="btn btn-sm btn-danger">Reject</button>
+                                                    </form>
+                                                {% elif application.status == 'accepted' %}
+                                                    <span class="badge bg-success">Accepted</span>
+                                                {% elif application.status == 'rejected' %}
+                                                    <span class="badge bg-danger">Rejected</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p>No applications yet.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    {% if not is_team_member and not has_applied %}
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5>Apply to Join This Project</h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="post" action="{{ url_for('apply_to_project', project_id=project.id) }}">
+                                    <div class="mb-3">
+                                        <label for="message" class="form-label">Why do you want to join this project?</label>
+                                        <textarea class="form-control" id="message" name="message" rows="3" required></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Submit Application</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% elif has_applied %}
+                        <div class="alert alert-info">
+                            You have already applied to this project. Your application is {{ application_status }}.
+                        </div>
+                    {% endif %}
+                {% endif %}
+            
+                <!-- Comments Section -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Comments</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{{ url_for('add_comment', project_id=project.id) }}" class="mb-4">
+                            <div class="mb-3">
+                                <textarea class="form-control" name="content" rows="2" placeholder="Add a comment..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Post Comment</button>
+                        </form>
+                        
+                        {% if comments %}
+                            <div class="list-group">
+                                {% for comment in comments %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">
+                                                <a href="{{ url_for('profile', username=comment.user.username) }}">
+                                                    {{ comment.user.username }}
+                                                </a>
+                                            </h6>
+                                            <small class="text-muted">{{ comment.created_at.strftime('%B %d, %Y %H:%M') }}</small>
+                                        </div>
+                                        <p class="mb-1">{{ comment.content }}</p>
+                                        {% if current_user.id == comment.user_id %}
+                                            <div class="mt-2">
+                                                <form method="post" action="{{ url_for('delete_comment', comment_id=comment.id) }}" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                                </form>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p>No comments yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <a href="{{ url_for('login') }}">Log in</a> to interact with this project.
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Project Details</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><strong>Timeline:</strong> {{ project.timeline }}</li>
+                    <li class="list-group-item"><strong>Team Size:</strong> {{ team_members|length }} 
+                        {% if project.max_members %}
+                            / {{ project.max_members }}
+                        {% endif %}
+                    </li>
+                    {% if project.github_link %}
+                        <li class="list-group-item">
+                            <strong>GitHub:</strong> 
+                            <a href="{{ project.github_link }}" target="_blank">{{ project.github_link }}</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+            
+            {% if similar_projects %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Similar Projects</h5>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        {% for similar in similar_projects %}
+                            <a href="{{ url_for('project', project_id=similar.id) }}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ similar.title }}</h6>
+                                </div>
+                                <p class="mb-1 text-truncate">{{ similar.description[:100] }}...</p>
+                                <small class="text-muted">{{ similar.category }}</small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Project Modal -->
+<div class="modal fade" id="deleteProjectModal" tabindex="-1" aria-labelledby="deleteProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteProjectModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete this project? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{{ url_for('delete_project', project_id=project.id) }}">
+                    <button type="submit" class="btn btn-danger">Delete Project</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -30,6 +30,6 @@ def get_air_quality(lat, lng):
         return {"error": f"Request failed with status code {response.status_code}", "details": response.text}
 
 # Example usage
-lat, lng = 37.7749, -122.4194  # Example coordinates (San Francisco)
+lat, lng = 12.9715987, 77.5945627 # Example coordinates (San Francisco)
 air_quality_data = get_air_quality(lat, lng)
 print("Final Processed Data:", air_quality_data)

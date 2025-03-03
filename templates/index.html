@@ -28,6 +28,7 @@
             line-height: 1.6;
             background-color: var(--background-color);
             color: var(--text-color);
+            background: url('static/background.jpg') no-repeat center center fixed;
             background-image: url('https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
             background-size: cover;
             background-attachment: fixed;
@@ -366,22 +367,24 @@
         }
         
         function getAQIColor(aqi) {
-            if (aqi === null) return "#808080"; // Gray for no data
-            if (aqi <= 50) return "#00E400"; // Green - Good
-            if (aqi <= 100) return "#FFFF00"; // Yellow - Moderate
-            if (aqi <= 150) return "#FF7E00"; // Orange - Unhealthy for Sensitive Groups
-            if (aqi <= 200) return "#FF0000"; // Red - Unhealthy
-            if (aqi <= 300) return "#8F3F97"; // Purple - Very Unhealthy
+            if (aqi === null) return "#808080";    // Gray for no data
+            if (aqi <= 15) return "#8F3F97";      // Purple - Very Unhealthy
+            if (aqi <= 20) return "#FF0000";     // Red - Unhealthy 
+            if (aqi <= 25) return "#FF7E00";    // Orange - Unhealthy for Sensitive Groups
+            if (aqi <= 30) return "#FFFF00";   // Yellow - Moderate 
+            if (aqi <= 50) return "#0dc40dc4 ";  // Green - Good   
+            if (aqi <=80) return  "#1dfa1d "; // Excellent Air Quality
             return "#7E0023"; // Maroon - Hazardous
         }
         
         function getAQICategory(aqi) {
             if (aqi === null) return "No Data";
+            if (aqi <= 15) return "Very Unhealthy";
+            if (aqi <= 20) return "Unhealthy";
+            if (aqi <= 25) return "Unhealthy for Sensitive Groups";
+            if (aqi <= 30) return "Moderate";
             if (aqi <= 50) return "Good";
-            if (aqi <= 100) return "Moderate";
-            if (aqi <= 150) return "Unhealthy for Sensitive Groups";
-            if (aqi <= 200) return "Unhealthy";
-            if (aqi <= 300) return "Very Unhealthy";
+            if (aqi <=80) return  "Excellent Quality Air";
             return "Hazardous";
         }
         
@@ -398,7 +401,7 @@
             .then(response => response.json())
             .then(data => {
                 data.forEach(loc => {
-                    var markerColor = loc.color || getAQIColor(loc.aqi);
+                    var markerColor = getAQIColor(loc.aqi);
                     
                     var marker = new google.maps.Marker({
                         position: { lat: loc.latitude, lng: loc.longitude },
@@ -424,7 +427,7 @@
                         <div class="info-window">
                             <h3>${loc.location_name}</h3>
                             <p><strong>AQI:</strong> ${loc.aqi || "N/A"}</p>
-                            <p><strong>Category:</strong> ${loc.category || getAQICategory(loc.aqi)}</p>
+                            <p><strong>Category:</strong> ${getAQICategory(loc.aqi)}</p>
                             <p><strong>Dominant Pollutant:</strong> ${loc.dominant_pollutant || "Unknown"}</p>
                         </div>
                     `;
@@ -535,12 +538,13 @@
             <div id="legend">
                 <h3>AQI Legend</h3>
                 <div class="legend-grid">
-                    <div class="legend-item"><span class="color-box" style="background-color: #00E400;"></span> Good (0-50)</div>
-                    <div class="legend-item"><span class="color-box" style="background-color: #FFFF00;"></span> Moderate (51-100)</div>
-                    <div class="legend-item"><span class="color-box" style="background-color: #FF7E00;"></span> Unhealthy for Sensitive (101-150)</div>
-                    <div class="legend-item"><span class="color-box" style="background-color: #FF0000;"></span> Unhealthy (151-200)</div>
-                    <div class="legend-item"><span class="color-box" style="background-color: #8F3F97;"></span> Very Unhealthy (201-300)</div>
-                    <div class="legend-item"><span class="color-box" style="background-color: #7E0023;"></span> Hazardous (301+)</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #1dfa1d;"></span> Excellent Air Quality(70>)</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #0dc40dc4;"></span> Good(50>)</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #FFFF00;"></span> Moderate (30-50)</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #FF7E00;"></span> Unhealthy for Sensitive(25-30)</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #FF0000;"></span> Unhealthy(20-25)</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #8F3F97;"></span> Very Unhealthy(15-20)</div>
+                    <div class="legend-item"><span class="color-box" style="background-color: #7E0023;"></span> Hazardous(0-15)</div>
                     <div class="legend-item"><span class="color-box" style="background-color: #808080;"></span> No Data</div>
                 </div>
             </div>

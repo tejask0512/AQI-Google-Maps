@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ user.username }}'s Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <img src="{{ user.profile_picture or url_for('static', filename='img/default-avatar.png') }}" 
+                         alt="{{ user.username }}'s profile picture" 
+                         class="rounded-circle img-fluid mb-3" 
+                         style="max-width: 150px;">
+                    <h3>{{ user.username }}</h3>
+                    <p class="text-muted">Member since {{ user.created_at.strftime('%B %Y') }}</p>
+                    
+                    {% if user == current_user %}
+                        <a href="{{ url_for('edit_profile') }}" class="btn btn-primary">Edit Profile</a>
+                    {% elif current_user.is_authenticated %}
+                        {% if is_following %}
+                            <form method="post" action="{{ url_for('unfollow_user', username=user.username) }}">
+                                <button type="submit" class="btn btn-outline-secondary">Unfollow</button>
+                            </form>
+                        {% else %}
+                            <form method="post" action="{{ url_for('follow_user', username=user.username) }}">
+                                <button type="submit" class="btn btn-primary">Follow</button>
+                            </form>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>About</h5>
+                </div>
+                <div class="card-body">
+                    {% if user.bio %}
+                        <p>{{ user.bio }}</p>
+                    {% else %}
+                        <p class="text-muted">No bio provided</p>
+                    {% endif %}
+                    
+                    <h6>Skills</h6>
+                    {% if user.skills %}
+                        <div>
+                            {% for skill in user.skills.split(',') %}
+                                <span class="badge bg-secondary me-1">{{ skill.strip() }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No skills listed</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Connections</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>
+                            <strong>{{ followers|length }}</strong> 
+                            <a href="{{ url_for('user_followers', username=user.username) }}">Followers</a>
+                        </span>
+                        <span>
+                            <strong>{{ following|length }}</strong> 
+                            <a href="{{ url_for('user_following', username=user.username) }}">Following</a>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            {% if user.github_username or user.linkedin_url or user.website %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Links</h5>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        {% if user.github_username %}
+                            <li class="list-group-item">
+                                <i class="bi bi-github"></i>
+                                <a href="https://github.com/{{ user.github_username }}" target="_blank">
+                                    {{ user.github_username }}
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% if user.linkedin_url %}
+                            <li class="list-group-item">
+                                <i class="bi bi-linkedin"></i>
+                                <a href="{{ user.linkedin_url }}" target="_blank">LinkedIn</a>
+                            </li>
+                        {% endif %}
+                        {% if user.website %}
+                            <li class="list-group-item">
+                                <i class="bi bi-globe"></i>
+                                <a href="{{ user.website }}" target="_blank">{{ user.website }}</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-8">
+            <ul class="nav nav-tabs mb-4" id="profileTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" 
+                            type="button" role="tab" aria-controls="projects" aria-selected="true">
+                        Projects
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" 
+                            type="button" role="tab" aria-controls="activity" aria-selected="false">
+                        Activity
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="profileTabsContent">
+                <div class="tab-pane fade show active" id="projects" role="tabpanel" aria-labelledby="projects-tab">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4>Projects</h4>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-secondary active" data-filter="created">Created</button>
+                            <button type="button" class="btn btn-outline-secondary" data-filter="contributed">Contributing</button>
+                        </div>
+                    </div>
+                    
+                    <div id="created-projects">
+                        {% if created_projects %}
+                            <div class="row">
+                                {% for project in created_projects %}
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card h-100">
+                                            <div class="card-body">
+                                                <h5 class="card-title">
+                                                    <a href="{{ url_for('project', project_id=project.id) }}">{{ project.title }}</a>
+                                                </h5>
+                                                <p class="card-text text-truncate">{{ project.description }}</p>
+                                                <div class="mb-2">
+                                                    <span class="badge bg-primary">{{ project.category }}</span>
+                                                    <span class="badge bg-info">{{ project.status }}</span>
+                                                    {% if project.is_recruiting %}
+                                                        <span class="badge bg-success">Recruiting</span>
+                                                    {% endif %}
+                                                </div>
+                                                <small class="text-muted">Created {{ project.created_at.strftime('%B %d, %Y') }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No projects created yet.</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div id="contributed-projects" style="display: none;">
+                        {% if contributed_projects %}
+                            <div class="row">
+                                {% for project in contributed_projects %}
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card h-100">
+                                            <div class="card-body">
+                                                <h5 class="card-title">
+                                                    <a href="{{ url_for('project', project_id=project.id) }}">{{ project.title }}</a>
+                                                </h5>
+                                                <p class="card-text">Created by 
+                                                    <a href="{{ url_for('profile', username=project.creator.username) }}">
+                                                        {{ project.creator.username }}
+                                                    </a>
+                                                </p>
+                                                <p class="card-text text-truncate">{{ project.description }}</p>
+                                                <div class="mb-2">
+                                                    <span class="badge bg-primary">{{ project.category }}</span>
+                                                    <span class="badge bg-info">{{ project.status }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">Not contributing to any projects yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="tab-pane fade" id="activity" role="tabpanel" aria-labelledby="activity-tab">
+                    <h4 class="mb-3">Recent Activity</h4>
+                    
+                    {% if activities %}
+                        <div class="list-group">
+                            {% for activity in activities %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <p class="mb-1">
+                                            {% if activity.type == 'project_create' %}
+                                                Created project <a href="{{ url_for('project', project_id=activity.project_id) }}">{{ activity.project.title }}</a>
+                                            {% elif activity.type == 'project_join' %}
+                                                Joined project <a href="{{ url_for('project', project_id=activity.project_id) }}">{{ activity.project.title }}</a>
+                                            {% elif activity.type == 'comment_add' %}
+                                                Commented on <a href="{{ url_for('project', project_id=activity.project_id) }}">{{ activity.project.title }}</a>
+                                            {% elif activity.type == 'follow_user' %}
+                                                Started following <a href="{{ url_for('profile', username=activity.target_user.username) }}">{{ activity.target_user.username }}</a>
+                                            {% endif %}
+                                        </p>
+                                        <small class="text-muted">{{ activity.created_at.strftime('%B %d, %Y') }}</small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No recent activity.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Projects tab filtering
+        const filterButtons = document.querySelectorAll('[data-filter]');
+        const createdProjects = document.getElementById('created-projects');
+        const contributedProjects = document.getElementById('contributed-projects');
+        
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const filter = this.dataset.filter;
+                
+                // Update active state
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show/hide projects based on filter
+                if (filter === 'created') {
+                    createdProjects.style.display = 'block';
+                    contributedProjects.style.display = 'none';
+                } else {
+                    createdProjects.style.display = 'none';
+                    contributedProjects.style.display = 'block';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
