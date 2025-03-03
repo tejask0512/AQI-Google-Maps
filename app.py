@@ -18,8 +18,8 @@ app.secret_key = "ShinchanYo"
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-GOOGLE_MAPS_API_KEY = "Google maps API key"
-AIR_QUALITY_API_KEY = "AIR quality API key"
+GOOGLE_MAPS_API_KEY = "AIzaSyCaEMcqU_EpGBw71sLTBSq_sywfPPAKJyc"
+AIR_QUALITY_API_KEY = "AIzaSyC3GAspOWXx5A703i4KwHqmPJWoql20hc0"
 
 BASE_DIR = r"C:\\Users\\tejas\\Python Projects\\Google Maps Projects\\Air Quality Google maps Webapp\\Air_Quality 3"
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -233,7 +233,7 @@ def profile():
         "last_login": user[3]
     }
     
-    return render_template("profile.html", user_name=session.get("user_name"), current_user=session)
+    return render_template("profile.html")
 
 @app.route("/reset_password", methods=["GET", "POST"])
 @login_required
@@ -277,7 +277,8 @@ def reset_password():
         flash("Password updated successfully", "success")
         return redirect(url_for("profile"))
     
-    return render_template("reset_password.html",user_name=session.get("user_name"), current_user=session)
+    return render_template("reset_password.html")
+
 # AQI Web Application
 # Fetch latitude & longitude from Google Maps API
 def get_lat_long(location_name):
@@ -500,7 +501,7 @@ def analytics():
         except:
             continue
     
-    return render_template("analytics.html", analytics_data=analytics_data,user_name=session.get("user_name"), current_user=session)
+    return render_template("analytics.html", analytics_data=analytics_data)
 
 
 @app.route("/settings")
@@ -521,7 +522,7 @@ def settings():
         "name": user[1]
     }
     
-    return render_template("setting.html", user_name=session.get("user_name"), current_user=session)
+    return render_template("setting.html")
 
 @app.route("/update_settings", methods=["POST"])
 @login_required
