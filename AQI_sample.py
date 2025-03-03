@@ -1,7 +1,7 @@
 import requests
 import json
 
-API_KEY = "AIzaSyC3GAspOWXx5A703i4KwHqmPJWoql20hc0"
+API_KEY = "your_api_key"
 
 def get_air_quality(lat, lng):
     url = f"https://airquality.googleapis.com/v1/currentConditions:lookup?key={API_KEY}"
