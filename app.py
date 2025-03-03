@@ -14,8 +14,8 @@ app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-GOOGLE_MAPS_API_KEY = "AIzaSyCaEMcqU_EpGBw71sLTBSq_sywfPPAKJyc"
-AIR_QUALITY_API_KEY = "AIzaSyC3GAspOWXx5A703i4KwHqmPJWoql20hc0"
+GOOGLE_MAPS_API_KEY = "Google maps API key"
+AIR_QUALITY_API_KEY = "AIR quality API key"
 
 BASE_DIR = r"C:\\Users\\tejas\\Python Projects\\Google Maps Projects\\Air Quality Google maps Webapp\\Air_Quality 3"
 DATA_DIR = os.path.join(BASE_DIR, "data")
