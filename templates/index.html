@@ -6,6 +6,7 @@
     <title>Air Quality Tracker</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC3GAspOWXx5A703i4KwHqmPJWoql20hc0&libraries=places"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         :root {
             --primary-color: #4CAF50;
@@ -238,6 +239,31 @@
             background-color: #0b7dda;
             transform: translateY(-2px);
         }
+
+        .download-btn {
+            background-color: var(--secondary-color);
+            margin-left: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .download-btn:hover {
+            background-color: #0b7dda;
+        }
+
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .download-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 10px 0;
+        }
         
         @media (max-width: 768px) {
             h1 {
@@ -260,6 +286,12 @@
             }
             button {
                 width: 100%;
+            }
+            .button-container {
+                flex-direction: column;
+            }
+            .download-options {
+                flex-direction: column;
             }
         }
         
@@ -474,6 +506,116 @@
                 console.error("Error loading AQI data:", error);
             });
         }
+
+        // Functions for downloading the map
+        function downloadMap() {
+            // Show loading state
+            const downloadBtn = document.getElementById("downloadMapBtn");
+            const originalText = downloadBtn.textContent;
+            downloadBtn.textContent = "Preparing...";
+            downloadBtn.disabled = true;
+
+            // Get the map container
+            const mapContainer = document.getElementById("map");
+            
+            // Use html2canvas to capture the map as an image
+            html2canvas(mapContainer, {
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null
+            }).then(canvas => {
+                // Create a download link
+                const link = document.createElement("a");
+                link.download = "aqi_map.png";
+                link.href = canvas.toDataURL("image/png");
+                
+                // Trigger the download
+                link.click();
+                
+                // Reset button state
+                downloadBtn.textContent = originalText;
+                downloadBtn.disabled = false;
+            }).catch(error => {
+                console.error("Error downloading map:", error);
+                alert("Failed to download map. Please try again.");
+                downloadBtn.textContent = originalText;
+                downloadBtn.disabled = false;
+            });
+        }
+
+        function downloadMapWithLegend() {
+            // Show loading state
+            const downloadBtn = document.getElementById("downloadMapWithLegendBtn");
+            const originalText = downloadBtn.textContent;
+            downloadBtn.textContent = "Preparing...";
+            downloadBtn.disabled = true;
+
+            // Get the map container and legend
+            const mapContainer = document.getElementById("mapSection");
+            
+            // Use html2canvas to capture the map with legend as an image
+            html2canvas(mapContainer, {
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null
+            }).then(canvas => {
+                // Create a download link
+                const link = document.createElement("a");
+                link.download = "aqi_map_with_legend.png";
+                link.href = canvas.toDataURL("image/png");
+                
+                // Trigger the download
+                link.click();
+                
+                // Reset button state
+                downloadBtn.textContent = originalText;
+                downloadBtn.disabled = false;
+            }).catch(error => {
+                console.error("Error downloading map with legend:", error);
+                alert("Failed to download map with legend. Please try again.");
+                downloadBtn.textContent = originalText;
+                downloadBtn.disabled = false;
+            });
+        }
+
+        function exportTableToCSV(tableId, filename) {
+            const table = document.getElementById(tableId);
+            let csv = [];
+            const rows = table.querySelectorAll("tr");
+            
+            for (let i = 0; i < rows.length; i++) {
+                const row = [], cols = rows[i].querySelectorAll("td, th");
+                
+                for (let j = 0; j < cols.length; j++) {
+                    // Handle commas in content by enclosing in quotes
+                    let text = cols[j].innerText;
+                    text = text.replace(/"/g, '""'); // replace " with ""
+                    row.push('"' + text + '"');
+                }
+                
+                csv.push(row.join(","));
+            }
+            
+            // Download CSV file
+            downloadCSV(csv.join("\n"), filename);
+        }
+
+        function downloadCSV(csv, filename) {
+            const csvFile = new Blob([csv], {type: "text/csv"});
+            const downloadLink = document.createElement("a");
+            
+            // Create a download link
+            downloadLink.download = filename;
+            downloadLink.href = window.URL.createObjectURL(csvFile);
+            downloadLink.style.display = "none";
+            
+            // Add to DOM and trigger click
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            
+            // Clean up
+            document.body.removeChild(downloadLink);
+        }
     </script>
 </head>
 <body onload="loadInitialData()">
@@ -507,11 +649,15 @@
                     <tbody id="locationsTableBody"></tbody>
                 </table>
             </div>
+            <button onclick="exportTableToCSV('locationsTableBody', 'locations_data.csv')">Download Locations Data (CSV)</button>
         </div>
 
         <div class="card">
             <h2>Air Quality Data</h2>
-            <button id="fetchButton" onclick="getAQI()">Fetch AQI</button>
+            <div class="button-container">
+                <button id="fetchButton" onclick="getAQI()">Fetch AQI</button>
+                <button onclick="exportTableToCSV('aqiTableBody', 'aqi_data.csv')">Download AQI Data (CSV)</button>
+            </div>
             <p class="helper-text">Click to fetch the latest air quality data for all stored locations</p>
             
             <div class="responsive-table-container">
@@ -531,8 +677,12 @@
             </div>
         </div>
 
-        <div class="card">
+        <div class="card" id="mapSection">
             <h2>Air Quality Map</h2>
+            <div class="download-options">
+                <button id="downloadMapBtn" onclick="downloadMap()" class="download-btn">Download Map Only</button>
+                <button id="downloadMapWithLegendBtn" onclick="downloadMapWithLegend()" class="download-btn">Download Map with Legend</button>
+            </div>
             <div id="map"></div>
             
             <div id="legend">

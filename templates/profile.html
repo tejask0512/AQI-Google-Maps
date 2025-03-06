@@ -1,253 +1,111 @@
-{% extends 'base.html' %}
-
-{% block title %}{{ user.username }}'s Profile{% endblock %}
-
-{% block content %}
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-body text-center">
-                    <img src="{{ user.profile_picture or url_for('static', filename='img/default-avatar.png') }}" 
-                         alt="{{ user.username }}'s profile picture" 
-                         class="rounded-circle img-fluid mb-3" 
-                         style="max-width: 150px;">
-                    <h3>{{ user.username }}</h3>
-                    <p class="text-muted">Member since {{ user.created_at.strftime('%B %Y') }}</p>
-                    
-                    {% if user == current_user %}
-                        <a href="{{ url_for('edit_profile') }}" class="btn btn-primary">Edit Profile</a>
-                    {% elif current_user.is_authenticated %}
-                        {% if is_following %}
-                            <form method="post" action="{{ url_for('unfollow_user', username=user.username) }}">
-                                <button type="submit" class="btn btn-outline-secondary">Unfollow</button>
-                            </form>
-                        {% else %}
-                            <form method="post" action="{{ url_for('follow_user', username=user.username) }}">
-                                <button type="submit" class="btn btn-primary">Follow</button>
-                            </form>
-                        {% endif %}
-                    {% endif %}
-                </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - Air Quality Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">Air Quality Dashboard</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('profile') }}">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('settings') }}">Settings</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                    </li>
+                </ul>
             </div>
-            
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>About</h5>
-                </div>
-                <div class="card-body">
-                    {% if user.bio %}
-                        <p>{{ user.bio }}</p>
-                    {% else %}
-                        <p class="text-muted">No bio provided</p>
-                    {% endif %}
-                    
-                    <h6>Skills</h6>
-                    {% if user.skills %}
-                        <div>
-                            {% for skill in user.skills.split(',') %}
-                                <span class="badge bg-secondary me-1">{{ skill.strip() }}</span>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-muted">No skills listed</p>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Connections</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>
-                            <strong>{{ followers|length }}</strong> 
-                            <a href="{{ url_for('user_followers', username=user.username) }}">Followers</a>
-                        </span>
-                        <span>
-                            <strong>{{ following|length }}</strong> 
-                            <a href="{{ url_for('user_following', username=user.username) }}">Following</a>
-                        </span>
-                    </div>
-                </div>
-            </div>
-            
-            {% if user.github_username or user.linkedin_url or user.website %}
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5>Links</h5>
-                    </div>
-                    <ul class="list-group list-group-flush">
-                        {% if user.github_username %}
-                            <li class="list-group-item">
-                                <i class="bi bi-github"></i>
-                                <a href="https://github.com/{{ user.github_username }}" target="_blank">
-                                    {{ user.github_username }}
-                                </a>
-                            </li>
-                        {% endif %}
-                        {% if user.linkedin_url %}
-                            <li class="list-group-item">
-                                <i class="bi bi-linkedin"></i>
-                                <a href="{{ user.linkedin_url }}" target="_blank">LinkedIn</a>
-                            </li>
-                        {% endif %}
-                        {% if user.website %}
-                            <li class="list-group-item">
-                                <i class="bi bi-globe"></i>
-                                <a href="{{ user.website }}" target="_blank">{{ user.website }}</a>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </div>
-            {% endif %}
         </div>
-        
-        <div class="col-md-8">
-            <ul class="nav nav-tabs mb-4" id="profileTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" 
-                            type="button" role="tab" aria-controls="projects" aria-selected="true">
-                        Projects
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" 
-                            type="button" role="tab" aria-controls="activity" aria-selected="false">
-                        Activity
-                    </button>
-                </li>
-            </ul>
-            
-            <div class="tab-content" id="profileTabsContent">
-                <div class="tab-pane fade show active" id="projects" role="tabpanel" aria-labelledby="projects-tab">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4>Projects</h4>
-                        <div class="btn-group">
-                            <button type="button" class="btn btn-outline-secondary active" data-filter="created">Created</button>
-                            <button type="button" class="btn btn-outline-secondary" data-filter="contributed">Contributing</button>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">User Profile</h4>
+                    </div>
+                    <div class="card-body">
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="profile-image-container text-center">
+                                    <img src="{{ url_for('static', filename='img/profile-placeholder.png') }}" alt="Profile Picture" class="img-fluid rounded-circle" style="width: 150px; height: 150px;">
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <h3>{{ session.get('user_name', 'User') }}</h3>
+                                <p class="text-muted">{{ session.get('user_email', 'Email not available') }}</p>
+                                
+                                <div class="mt-3">
+                                    <a href="{{ url_for('reset_password') }}" class="btn btn-sm btn-outline-primary">Change Password</a>
+                                    <a href="{{ url_for('settings') }}" class="btn btn-sm btn-outline-secondary">Edit Profile</a>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div id="created-projects">
-                        {% if created_projects %}
-                            <div class="row">
-                                {% for project in created_projects %}
-                                    <div class="col-md-6 mb-4">
-                                        <div class="card h-100">
-                                            <div class="card-body">
-                                                <h5 class="card-title">
-                                                    <a href="{{ url_for('project', project_id=project.id) }}">{{ project.title }}</a>
-                                                </h5>
-                                                <p class="card-text text-truncate">{{ project.description }}</p>
-                                                <div class="mb-2">
-                                                    <span class="badge bg-primary">{{ project.category }}</span>
-                                                    <span class="badge bg-info">{{ project.status }}</span>
-                                                    {% if project.is_recruiting %}
-                                                        <span class="badge bg-success">Recruiting</span>
-                                                    {% endif %}
-                                                </div>
-                                                <small class="text-muted">Created {{ project.created_at.strftime('%B %d, %Y') }}</small>
-                                            </div>
-                                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">Account Information</h5>
                                     </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <p class="text-muted">No projects created yet.</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div id="contributed-projects" style="display: none;">
-                        {% if contributed_projects %}
-                            <div class="row">
-                                {% for project in contributed_projects %}
-                                    <div class="col-md-6 mb-4">
-                                        <div class="card h-100">
-                                            <div class="card-body">
-                                                <h5 class="card-title">
-                                                    <a href="{{ url_for('project', project_id=project.id) }}">{{ project.title }}</a>
-                                                </h5>
-                                                <p class="card-text">Created by 
-                                                    <a href="{{ url_for('profile', username=project.creator.username) }}">
-                                                        {{ project.creator.username }}
-                                                    </a>
-                                                </p>
-                                                <p class="card-text text-truncate">{{ project.description }}</p>
-                                                <div class="mb-2">
-                                                    <span class="badge bg-primary">{{ project.category }}</span>
-                                                    <span class="badge bg-info">{{ project.status }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <p class="text-muted">Not contributing to any projects yet.</p>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                <div class="tab-pane fade" id="activity" role="tabpanel" aria-labelledby="activity-tab">
-                    <h4 class="mb-3">Recent Activity</h4>
-                    
-                    {% if activities %}
-                        <div class="list-group">
-                            {% for activity in activities %}
-                                <div class="list-group-item">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <p class="mb-1">
-                                            {% if activity.type == 'project_create' %}
-                                                Created project <a href="{{ url_for('project', project_id=activity.project_id) }}">{{ activity.project.title }}</a>
-                                            {% elif activity.type == 'project_join' %}
-                                                Joined project <a href="{{ url_for('project', project_id=activity.project_id) }}">{{ activity.project.title }}</a>
-                                            {% elif activity.type == 'comment_add' %}
-                                                Commented on <a href="{{ url_for('project', project_id=activity.project_id) }}">{{ activity.project.title }}</a>
-                                            {% elif activity.type == 'follow_user' %}
-                                                Started following <a href="{{ url_for('profile', username=activity.target_user.username) }}">{{ activity.target_user.username }}</a>
+                                    <div class="card-body">
+                                        <p><strong>Name:</strong> {{ session.get('user_name', 'N/A') }}</p>
+                                        <p><strong>Email:</strong> {{ session.get('user_email', 'N/A') }}</p>
+                                        <p><strong>Account Created:</strong> 
+                                            {% if user_data and user_data.created_at %}
+                                                {{ user_data.created_at }}
+                                            {% else %}
+                                                Information not available
                                             {% endif %}
                                         </p>
-                                        <small class="text-muted">{{ activity.created_at.strftime('%B %d, %Y') }}</small>
+                                        <p><strong>Last Login:</strong> 
+                                            {% if user_data and user_data.last_login %}
+                                                {{ user_data.last_login }}
+                                            {% else %}
+                                                Information not available
+                                            {% endif %}
+                                        </p>
                                     </div>
                                 </div>
-                            {% endfor %}
+                            </div>
                         </div>
-                    {% else %}
-                        <p class="text-muted">No recent activity.</p>
-                    {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Projects tab filtering
-        const filterButtons = document.querySelectorAll('[data-filter]');
-        const createdProjects = document.getElementById('created-projects');
-        const contributedProjects = document.getElementById('contributed-projects');
-        
-        filterButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const filter = this.dataset.filter;
-                
-                // Update active state
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Show/hide projects based on filter
-                if (filter === 'created') {
-                    createdProjects.style.display = 'block';
-                    contributedProjects.style.display = 'none';
-                } else {
-                    createdProjects.style.display = 'none';
-                    contributedProjects.style.display = 'block';
-                }
-            });
-        });
-    });
-</script>
-{% endblock %}
+    <footer class="mt-5 py-3 bg-dark text-white text-center">
+        <div class="container">
+            <p class="mb-0">© 2023 Air Quality Dashboard. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

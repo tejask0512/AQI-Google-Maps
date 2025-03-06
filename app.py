@@ -233,7 +233,7 @@ def profile():
         "last_login": user[3]
     }
     
-    return render_template("profile.html")
+    return render_template("profile.html", user_data=user_data)
 
 @app.route("/reset_password", methods=["GET", "POST"])
 @login_required
@@ -510,19 +510,19 @@ def settings():
     conn = sqlite3.connect(USER_DB)
     cursor = conn.cursor()
     cursor.execute("SELECT email, name FROM users WHERE id = ?", (session["user_id"],))
-    user = cursor.fetchone()
+    user_data = cursor.fetchone()
     conn.close()
     
-    if not user:
+    if not user_data:
         flash("User not found", "error")
         return redirect(url_for("dashboard"))
     
-    user_data = {
-        "email": user[0],
-        "name": user[1]
+    user = {
+        "email": user_data[0],
+        "name": user_data[1]
     }
     
-    return render_template("setting.html")
+    return render_template("settings.html", user=user)
 
 @app.route("/update_settings", methods=["POST"])
 @login_required

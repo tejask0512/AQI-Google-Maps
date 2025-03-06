@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AQI Information</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Air Quality Index (AQI) Information</h1>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('aqi_info') }}" class="active">AQI Info</a></li>
+                <li><a href="{{ url_for('history') }}">History</a></li>
+                <li><a href="{{ url_for('about') }}">About</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="info-container">
+        <section class="aqi-explanation">
+            <h2>Understanding Air Quality Index (AQI)</h2>
+            <p>The Air Quality Index (AQI) is a scale used to communicate how polluted the air is and what associated health effects might be of concern. The AQI focuses on health effects you may experience within a few hours or days after breathing polluted air.</p>
+            
+            <h3>AQI Categories</h3>
+            <table class="aqi-table">
+                <thead>
+                    <tr>
+                        <th>AQI Range</th>
+                        <th>Category</th>
+                        <th>Color</th>
+                        <th>Health Implications</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="aqi-good">
+                        <td>0-50</td>
+                        <td>Good</td>
+                        <td>Green</td>
+                        <td>Air quality is considered satisfactory, and air pollution poses little or no risk.</td>
+                    </tr>
+                    <tr class="aqi-moderate">
+                        <td>51-100</td>
+                        <td>Moderate</td>
+                        <td>Yellow</td>
+                        <td>Air quality is acceptable; however, some pollutants may be a concern for a small number of people who are unusually sensitive to air pollution.</td>
+                    </tr>
+                    <tr class="aqi-sensitive">
+                        <td>101-150</td>
+                        <td>Unhealthy for Sensitive Groups</td>
+                        <td>Orange</td>
+                        <td>Members of sensitive groups may experience health effects. The general public is not likely to be affected.</td>
+                    </tr>
+                    <tr class="aqi-unhealthy">
+                        <td>151-200</td>
+                        <td>Unhealthy</td>
+                        <td>Red</td>
+                        <td>Everyone may begin to experience health effects; members of sensitive groups may experience more serious health effects.</td>
+                    </tr>
+                    <tr class="aqi-very-unhealthy">
+                        <td>201-300</td>
+                        <td>Very Unhealthy</td>
+                        <td>Purple</td>
+                        <td>Health alert: everyone may experience more serious health effects.</td>
+                    </tr>
+                    <tr class="aqi-hazardous">
+                        <td>301-500</td>
+                        <td>Hazardous</td>
+                        <td>Maroon</td>
+                        <td>Health warnings of emergency conditions. The entire population is more likely to be affected.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="pollutants">
+            <h2>Major Air Pollutants</h2>
+            
+            <div class="pollutant-item">
+                <h3>PM2.5 (Particulate Matter 2.5)</h3>
+                <p>Fine particles with diameters of 2.5 micrometers or less. These particles are small enough to penetrate deep into the lungs and even enter the bloodstream. Sources include wildfires, vehicle emissions, and industrial processes.</p>
+            </div>
+            
+            <div class="pollutant-item">
+                <h3>PM10 (Particulate Matter 10)</h3>
+                <p>Particles with diameters of 10 micrometers or less. These include dust, pollen, and mold. While larger than PM2.5, they can still enter the lungs and cause health problems.</p>
+            </div>
+            
+            <div class="pollutant-item">
+                <h3>O3 (Ozone)</h3>
+                <p>Ground-level ozone is created by chemical reactions between oxides of nitrogen and volatile organic compounds in the presence of sunlight. It can trigger a variety of health problems, particularly for children, the elderly, and people of all ages who have lung diseases.</p>
+            </div>
+            
+            <div class="pollutant-item">
+                <h3>NO2 (Nitrogen Dioxide)</h3>
+                <p>A gaseous air pollutant produced by road traffic and other fossil fuel combustion processes. It can cause inflammation of the airways and increase susceptibility to respiratory infections.</p>
+            </div>
+            
+            <div class="pollutant-item">
+                <h3>SO2 (Sulfur Dioxide)</h3>
+                <p>A gas produced from burning fossil fuels containing sulfur. It can affect the respiratory system, particularly in people with asthma, and can also contribute to acid rain.</p>
+            </div>
+            
+            <div class="pollutant-item">
+                <h3>CO (Carbon Monoxide)</h3>
+                <p>An odorless, colorless gas that can cause health problems at high levels. It is produced by the incomplete burning of carbon-containing fuels.</p>
+            </div>
+        </section>
+
+        <section class="protection-measures">
+            <h2>How to Protect Yourself from Air Pollution</h2>
+            
+            <div class="protection-item">
+                <h3>Check the AQI Regularly</h3>
+                <p>Stay informed about local air quality by checking daily forecasts and real-time AQI values through our app or local news sources.</p>
+            </div>
+            
+            <div class="protection-item">
+                <h3>Limit Outdoor Activities</h3>
+                <p>When the AQI is high, reduce prolonged or heavy exertion outdoors. Consider moving activities indoors or rescheduling them for when air quality improves.</p>
+            </div>
+            
+            <div class="protection-item">
+                <h3>Use Air Purifiers</h3>
+                <p>Consider using HEPA air purifiers in your home to filter out pollutants, especially during periods of poor air quality.</p>
+            </div>
+            
+            <div class="protection-item">
+                <h3>Wear Masks When Necessary</h3>
+                <p>In high pollution areas or during pollution events, consider wearing an N95 respirator mask, which can filter out fine particles.</p>
+            </div>
+            
+            <div class="protection-item">
+                <h3>Create Clean Air Spaces</h3>
+                <p>Keep windows and doors closed during high pollution events. Use air conditioning if available, preferably with a clean filter.</p>
+            </div>
+            
+            <div class="protection-item">
+                <h3>Stay Hydrated</h3>
+                <p>Drink plenty of water to help your body process and flush out toxins that you may have inhaled.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 AirWise - Your Personal Air Quality Monitor</p>
+    </footer>
+</body>
+</html>
