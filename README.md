@@ -1,4 +1,4 @@
-# AQI Visualization Using Google Maps
+# AQI monitoring for pollution Control : AQI Visualization Using Google Maps
 
 ## Overview
 This project fetches Air Quality Index (AQI) data for given locations, stores it in a database, and visualizes it on Google Maps with color-coded markers based on AQI levels.
