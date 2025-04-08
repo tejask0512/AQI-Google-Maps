@@ -1,0 +1,120 @@
+flowchart TD
+    %% Level 0 DFD - Context Diagram
+    subgraph "Level 0: Context Diagram"
+        User((User))
+        AQISystem[Air Quality System]
+        GoogleMapsAPI[Google Maps API]
+        AirQualityAPI[Google Air Quality API]
+
+        User <-->|Authenticate/Submit Locations| AQISystem
+        AQISystem <-->|Geocode Requests| GoogleMapsAPI
+        AQISystem <-->|AQI Requests| AirQualityAPI
+        AQISystem -->|Visualize AQI Data| User
+    end
+
+    %% Level 1 DFD - Main Process Breakdown
+    subgraph "Level 1: Main Process Breakdown"
+        User1((User))
+        
+        subgraph "Authentication System"
+            Auth[Authentication Process]
+            UserDB[(User Database)]
+            
+            User1 -->|Login/Register| Auth
+            Auth <-->|Verify/Store| UserDB
+            Auth -->|Session| User1
+        end
+        
+        subgraph "Location System"
+            LocProc[Location Processing]
+            LocDB[(Location Database)]
+            GeoAPI[Google Geocoding API]
+            
+            User1 -->|Upload Locations| LocProc
+            LocProc -->|Request Coordinates| GeoAPI
+            GeoAPI -->|Return Coordinates| LocProc
+            LocProc <-->|Store Locations| LocDB
+        end
+        
+        subgraph "AQI System"
+            AQIProc[AQI Processing]
+            AQIApi[Google Air Quality API]
+            
+            User1 -->|Request AQI Data| AQIProc
+            AQIProc -->|Fetch Locations| LocDB
+            AQIProc -->|Request AQI| AQIApi
+            AQIApi -->|Return AQI Data| AQIProc
+            AQIProc -->|Store Results| LocDB
+            AQIProc -->|Display Results| User1
+        end
+    end
+
+    %% Level 2 DFD - Detailed Process Flow
+    subgraph "Level 2: Authentication Process"
+        User2((User))
+        Login[Login Process]
+        Register[Registration Process]
+        ResetPwd[Reset Password Process]
+        UserDB2[(User Database)]
+        
+        User2 -->|Submit Credentials| Login
+        User2 -->|Submit Registration| Register
+        User2 -->|Request Password Reset| ResetPwd
+        
+        Login <-->|Verify Credentials| UserDB2
+        Register -->|Store New User| UserDB2
+        ResetPwd <-->|Update Password| UserDB2
+        
+        Login -->|Session Cookie| User2
+        Register -->|Redirect to Login| User2
+        ResetPwd -->|Confirmation| User2
+    end
+
+    subgraph "Level 2: Location and AQI Process"
+        User3((User))
+        FileUpload[Upload Location File]
+        ProcessLoc[Process Locations]
+        FetchAQI[Fetch AQI Data]
+        VisualizeAQI[Visualize AQI Data]
+        LocDB2[(Location Database)]
+        GeoAPI2[Google Maps API]
+        AQIAPI2[Air Quality API]
+        
+        User3 -->|Upload File| FileUpload
+        FileUpload -->|Parse File| ProcessLoc
+        ProcessLoc -->|Request Geocoding| GeoAPI2
+        GeoAPI2 -->|Return Coordinates| ProcessLoc
+        ProcessLoc <-->|Store Location Data| LocDB2
+        
+        User3 -->|Request AQI Updates| FetchAQI
+        FetchAQI -->|Get Locations| LocDB2
+        FetchAQI -->|Request AQI Data| AQIAPI2
+        AQIAPI2 -->|Return Air Quality Data| FetchAQI
+        FetchAQI -->|Store AQI Data| LocDB2
+        
+        User3 -->|View Map/Analytics| VisualizeAQI
+        VisualizeAQI -->|Retrieve AQI Data| LocDB2
+        VisualizeAQI -->|Display Results| User3
+    end
+
+    %% Data Store Details
+    subgraph "Data Stores Detail"
+        subgraph "User Database" 
+            UserTable[("users
+            - id
+            - email
+            - password_hash
+            - name
+            - created_at
+            - last_login")]
+        end
+        
+        subgraph "Location Database"
+            LocTable[("air_quality_index
+            - id
+            - name
+            - latitude
+            - longitude
+            - response")]
+        end
+    end

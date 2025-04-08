@@ -4,5 +4,6 @@ flask-login
 flask-bcrypt 
 flask-mail 
 werkzeug 
-sqlite3 
 requests
+redis
+flask-caching

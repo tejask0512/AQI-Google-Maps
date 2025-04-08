@@ -11,17 +11,23 @@ import hashlib
 import secrets
 import time
 from functools import wraps
+import config
+
+import redis
 
 app = Flask(__name__)
+cache=redis.Redis("host",port=6379)
+
+def get
 
 app.secret_key = "ShinchanYo"
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-GOOGLE_MAPS_API_KEY = "AIzaSyCaEMcqU_EpGBw71sLTBSq_sywfPPAKJyc"
-AIR_QUALITY_API_KEY = "AIzaSyC3GAspOWXx5A703i4KwHqmPJWoql20hc0"
+GOOGLE_MAPS_API_KEY = config.GOOGLE_MAPS_API_KEY
+AIR_QUALITY_API_KEY = config.AIR_QUALITY_API_KEY
 
-BASE_DIR = r"C:\\Users\\tejas\\Python Projects\\Google Maps Projects\\Air Quality Google maps Webapp\\Air_Quality 3"
+BASE_DIR = r".\Air_Quality Final webapp"
 DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 
@@ -565,5 +571,5 @@ def update_settings():
 
 if __name__ == "__main__":
     init_db()
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0",port=5000)
 
