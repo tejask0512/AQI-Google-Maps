@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 import sqlite3
+import redis.exceptions
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
 
@@ -12,13 +13,24 @@ import secrets
 import time
 from functools import wraps
 import config
-
+from flask_caching import Cache
 import redis
 
 app = Flask(__name__)
 cache=redis.Redis("host",port=6379)
 
-def get
+def get_hit_count():
+    retries=5
+    while True:
+        try:
+            #cache.reset_retry_count()
+            return cache.incr('hits')
+        except redis.exceptions.ConnectionError as exc:
+            if retries==0:
+                raise exc
+            retries -=1
+            time.sleep(0.5)
+
 
 app.secret_key = "ShinchanYo"
 UPLOAD_FOLDER = "uploads"
@@ -116,6 +128,8 @@ def store_location(name, latitude, longitude):
 
 @app.route('/')
 def home():
+    count=get_hit_count()
+    print(f"Hello Tejas ! AQI-webapp has {count} views")
     if "user_id" in session:  
         return redirect(url_for('dashboard'))  # User is logged in, go to dashboard
     return redirect(url_for('login'))  # User is NOT logged in, go to login page
@@ -571,5 +585,6 @@ def update_settings():
 
 if __name__ == "__main__":
     init_db()
+    
     app.run(debug=True, host="0.0.0.0",port=5000)
 

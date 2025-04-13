@@ -1,0 +1,14 @@
+version: "3.0"
+services:
+  web:
+    image: tejask0512/aqi-webapp
+    build: .
+    ports:
+      - "8000:5000"
+    volumes:
+      - "/data"
+    depends_on:
+      - redis
+  redis:
+    image: redis:alpine
+ 
